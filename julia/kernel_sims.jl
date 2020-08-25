@@ -1,7 +1,10 @@
 using LinearAlgebra
 using Distributions
 using PDMats
-using PyPlot
+#using PyPlot
+using PyCall
+
+mplt = pyimport("matplotlib.pyplot")
 
 ##
 include("IterativeMethods.jl")
@@ -50,7 +53,7 @@ iter_methods = [
     IterativeMethods.Jacobi(k_Z, f_Z, 2/3)
 ]
 init_distributions = [
-    MvNormal(zeros(d), PDiagMat(1/d*ones(d))),
+    MvNormal(zeros(d), PDiagMat(ones(d))),
     MvNormalCanon(zeros(d), PDMat(k_Z))
 ]
 init_distribution_labels = Dict([
@@ -72,33 +75,20 @@ for experiment = experiments
     results[experiment] = ExperimentHelpers.ExperimentResult(empirical_mean, empirical_cov, rvs)
 end
 ## plot the output
-pygui(true)
+#pygui(true)
 layout_rows = length(init_distributions)*length(iter_methods)
 layout_cols = length(n_iter_vals)
-fig = figure(figsize=(10, 15), constrained_layout=false)
-super_ax = fig.add_gridspec(2, 2, width_ratios=[0.01, 1], height_ratios=[0.01,1])
-subgrid = super_ax[2,2].subgridspec(layout_rows, layout_cols)
 
-col_label_subgrid = super_ax[1,2].subgridspec(1, layout_cols)
-row_label_subgrid = super_ax[2,1].subgridspec(layout_rows, 1)
+scale = 1.5
+fig,ax = mplt.subplots(layout_rows,layout_cols,sharex="all",sharey="all",figsize = (scale*8,scale*6))
 
-ax = Matrix(undef, layout_rows, layout_cols)
-for i = 1:layout_rows
-    for j = 1:layout_cols
-        if i > 1 && j > 1
-            ax[i,j] = fig.add_subplot(subgrid[i,j], sharex=ax[1,1], sharey=ax[1,1])
-        else
-            ax[i,j] = fig.add_subplot(subgrid[i,j])
-        end
-    end
-end
 
 function experiment_to_label(experiment::ExperimentHelpers.Experiment) :: String
 
     method_name = experiment.Method.Name
     method_stepsize = experiment.Method.Stepsize == IterativeMethods.Optimal ? "(i)" : "(ii)"
     method_prior = init_distribution_labels[experiment.InitialDist]
-    "($method_name, $method_stepsize, $method_prior)"
+    "$method_name,\n $method_stepsize, $method_prior"
 end
 for (col_ix, n_iter) = enumerate(n_iter_vals)
     for (row_ix, (dist, method)) = enumerate(Iterators.product(init_distributions, iter_methods))
@@ -109,13 +99,15 @@ for (col_ix, n_iter) = enumerate(n_iter_vals)
 
         if col_ix == 1
             label = experiment_to_label(experiment)
-            row_label_ax = fig.add_subplot(row_label_subgrid[row_ix])
-            row_label_ax.annotate(label, (0,0), xytext=(0.5, 0.5), textcoords="axes fraction", ha="center", va="center", rotation=90)
-            row_label_ax.axis("off")
+            ax[row_ix,1].set_ylabel(label,rotation=90)
         end
     end
-    #ax[1, col_ix+1].annotate("\$m=$n_iter\$", (0,0), xytext=(0.5, 0.5), textcoords="axes fraction", ha="center", va="center", fontsize=14)
-    #ax[1, col_ix+1].axis("off")
+    ax[1,col_ix].set_title("\$m=$n_iter\$")
+    ax[end, col_ix].set_xlabel("x")
 end
 
-tight_layout()
+mplt.tight_layout()
+
+#mplt.show()
+mplt.savefig("unscaled_id_prior.pdf")
+
