@@ -41,6 +41,17 @@ function apply(method::StationaryIterativeMethod, dist::AbstractMvNormal, iter::
 end
 
 
+function apply(method::StationaryIterativeMethod, mean_vec, cov_mat, iter::Integer=1)
+    if iter == 0
+        return mean_vec, cov_mat
+    else
+        mean_vec = method.G*mean_vec+method.f
+        cov_mat = method.G*cov_mat*method.G'
+        return apply(method, mean_vec, cov_mat, iter-1)
+    end
+end
+
+
 function sample(method::StationaryIterativeMethod, dist::MultivariateDistribution, iter::Integer=1, samples::Integer=1)
     init_mat = Matrix{Float64}(undef, length(dist), samples)
     rand!(dist, init_mat)

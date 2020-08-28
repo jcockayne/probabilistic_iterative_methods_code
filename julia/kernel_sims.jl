@@ -70,8 +70,14 @@ results = Dict()
 samples = 50
 for experiment = experiments
     rvs = IterativeMethods.sample(experiment.Method, experiment.InitialDist, experiment.Iterations, samples)
-    empirical_mean = mean(rvs)
-    empirical_cov = cov(rvs)
+    if experiment.InitialDist isa MvNormal
+        input_cov = convert(Array,experiment.InitialDist.Σ)
+    elseif experiment.InitialDist isa MvNormalCanon
+        input_cov = convert(Array,inv(experiment.InitialDist.J))
+    end
+    empirical_mean,empirical_cov = IterativeMethods.apply(experiment.Method, experiment.InitialDist.μ, input_cov, experiment.Iterations)
+    #empirical_mean = mean(rvs)
+    #empirical_cov = cov(rvs)
     results[experiment] = ExperimentHelpers.ExperimentResult(empirical_mean, empirical_cov, rvs)
 end
 ## plot the output
@@ -80,7 +86,7 @@ layout_rows = length(init_distributions)*length(iter_methods)
 layout_cols = length(n_iter_vals)
 
 scale = 1.5
-fig,ax = mplt.subplots(layout_rows,layout_cols,sharex="all",sharey="all",figsize = (scale*8,scale*6))
+fig,ax = mplt.subplots(layout_rows,layout_cols,sharex="all",sharey="all",figsize = (scale*8,scale*6),num=1)
 
 
 function experiment_to_label(experiment::ExperimentHelpers.Experiment) :: String
@@ -106,8 +112,77 @@ for (col_ix, n_iter) = enumerate(n_iter_vals)
     ax[end, col_ix].set_xlabel("x")
 end
 
-mplt.tight_layout()
+fig.tight_layout()
 
 #mplt.show()
-mplt.savefig("unscaled_id_prior.pdf")
+fig.savefig("unscaled_id_prior.pdf")
+
+fig.clear()
+
+### Principal components
+
+function pc_sample(mean_vector :: Array{Float64}, sqrt_cov :: Array{Float64}) :: Array{Float64}
+    #N = size(sqrt_cov)[2]
+    randn(1).*sqrt_cov + mean_vector
+end
+
+function float2sci(x::Float64, figs::Int=2)
+    power = convert(Int,round(log10(x),RoundDown))
+    if -1 <= power <= 2
+        figs = max(figs-power,2)
+        x = string(round(x,digits=figs))
+    else
+        x = round(x/(10.0^power),digits=figs)
+        x = string(x,"\\times10^{",power,"}")
+    end
+
+    return x
+end
+
+princ_comp = 8
+princ_comp_samples = 20
+
+for (experiment_number, (dist, method)) = enumerate(Iterators.product(init_distributions, iter_methods))
+    
+    fig,ax = mplt.subplots(princ_comp,layout_cols,sharex="all",sharey="all",figsize = (scale*8,scale*6),num=1)
+
+
+    experiment = ExperimentHelpers.Experiment(n_iter_vals[1], method, dist)
+    
+    for (col_ix, n_iter) = enumerate(n_iter_vals)
+        if col_ix != 1
+            experiment = ExperimentHelpers.Experiment(n_iter, method, dist)
+        end
+        F = svd(results[experiment].Cov)
+        mean_vec = results[experiment].Mean
+        for row_ix = 1:princ_comp
+            ax[row_ix, col_ix].plot(Y, g_direct_solution)
+            for samp = 1:princ_comp_samples
+                ax[row_ix, col_ix].plot(Y, g(Y, Z, pc_sample(mean_vec,F.U[:,row_ix])), color=:black, alpha=0.2, linewidth=1)
+            end
+
+            if col_ix == 1
+                label = "\$PC=$row_ix\$"
+                ax[row_ix,1].set_ylabel(label,rotation=90)
+            end
+            if row_ix == 1
+                SV = float2sci(F.S[row_ix])
+                title_str = string("\$ \\sigma = ",SV,"\$")
+            else
+                SV = float2sci(F.S[row_ix])
+                title_str = string("\$ \\sigma = ",SV,"\$")
+            end
+            ax[row_ix,col_ix].set_title(title_str)
+        end
+        ax[end, col_ix].set_xlabel("x")
+    end
+    
+    fig.tight_layout()
+
+    #mplt.show()
+    figname = string(experiment_to_label(experiment),".pdf")
+    fig.savefig(figname)
+
+    fig.clear()
+end
 
