@@ -34,6 +34,7 @@ end
 f_Z = f.(Z)
 lambda = 0.0012
 k_Z = k(Z, Z, lambda)
+k_YZ = k(Y, Z, lambda)
 
 if eigmin(k_Z) < 0.
     throw(Exception("The matrix k_Z was not positive-definite."))
@@ -75,11 +76,16 @@ for experiment = experiments
     elseif experiment.InitialDist isa MvNormalCanon
         input_cov = convert(Array,inv(experiment.InitialDist.J))
     end
-    empirical_mean,empirical_cov = IterativeMethods.apply(experiment.Method, experiment.InitialDist.μ, input_cov, experiment.Iterations)
+    input_mean = convert(Array,experiment.InitialDist.μ)
+    empirical_mean,empirical_cov = (
+        IterativeMethods.apply(experiment.Method, input_mean, input_cov,
+                               experiment.Iterations)
+    )
     #empirical_mean = mean(rvs)
     #empirical_cov = cov(rvs)
     results[experiment] = ExperimentHelpers.ExperimentResult(empirical_mean, empirical_cov, rvs)
 end
+
 ## plot the output
 #pygui(true)
 layout_rows = length(init_distributions)*length(iter_methods)
@@ -96,6 +102,15 @@ function experiment_to_label(experiment::ExperimentHelpers.Experiment) :: String
     method_prior = init_distribution_labels[experiment.InitialDist]
     "$method_name,\n $method_stepsize, $method_prior"
 end
+
+function experiment_to_filename(experiment::ExperimentHelpers.Experiment) :: String
+
+    method_name = experiment.Method.Name
+    method_stepsize = experiment.Method.Stepsize == IterativeMethods.Optimal ? "(i)" : "(ii)"
+    method_prior = init_distribution_labels[experiment.InitialDist]
+    "$method_name-$method_stepsize-$method_prior"
+end
+
 for (col_ix, n_iter) = enumerate(n_iter_vals)
     for (row_ix, (dist, method)) = enumerate(Iterators.product(init_distributions, iter_methods))
         experiment = ExperimentHelpers.Experiment(n_iter, method, dist)
@@ -112,10 +127,10 @@ for (col_ix, n_iter) = enumerate(n_iter_vals)
     ax[end, col_ix].set_xlabel("x")
 end
 
-fig.tight_layout()
+#fig.tight_layout()
 
 #mplt.show()
-fig.savefig("unscaled_id_prior.pdf")
+fig.savefig("unscaled_id_prior.pdf",bbox_inches = "tight")
 
 fig.clear()
 
@@ -123,7 +138,7 @@ fig.clear()
 
 function pc_sample(mean_vector :: Array{Float64}, sqrt_cov :: Array{Float64}) :: Array{Float64}
     #N = size(sqrt_cov)[2]
-    randn(1).*sqrt_cov + mean_vector
+    5*randn(1).*sqrt_cov + mean_vector
 end
 
 function float2sci(x::Float64, figs::Int=2)
@@ -153,12 +168,15 @@ for (experiment_number, (dist, method)) = enumerate(Iterators.product(init_distr
         if col_ix != 1
             experiment = ExperimentHelpers.Experiment(n_iter, method, dist)
         end
-        F = svd(results[experiment].Cov)
+        interpolation_cov = k_YZ*results[experiment].Cov*k_YZ';
+        F = svd(interpolation_cov)
         mean_vec = results[experiment].Mean
         for row_ix = 1:princ_comp
             ax[row_ix, col_ix].plot(Y, g_direct_solution)
             for samp = 1:princ_comp_samples
-                ax[row_ix, col_ix].plot(Y, g(Y, Z, pc_sample(mean_vec,F.U[:,row_ix])), color=:black, alpha=0.2, linewidth=1)
+                ax[row_ix, col_ix].plot(Y, g(Y, Z, mean_vec)
+                                        + randn(Float64)*F.U[:,row_ix],
+                                        color=:black, alpha=0.2, linewidth=1)
             end
 
             if col_ix == 1
@@ -177,11 +195,11 @@ for (experiment_number, (dist, method)) = enumerate(Iterators.product(init_distr
         ax[end, col_ix].set_xlabel("x")
     end
     
-    fig.tight_layout()
+    #fig.tight_layout()
 
     #mplt.show()
-    figname = string(experiment_to_label(experiment),".pdf")
-    fig.savefig(figname)
+    figname = string(experiment_to_filename(experiment),".pdf")
+    fig.savefig(figname,bbox_inches = "tight")
 
     fig.clear()
 end

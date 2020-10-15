@@ -77,3 +77,14 @@ notebooks/**/*.npy
 notebooks/**/*.pkl
 notebooks/**/*.tex
 linear_solvers/**/*.cpp
+
+# Extra TeX Files
+*.aux
+*.bbl
+*.blg
+*.log
+*.pdf
+
+# Emacs Autosaves
+*~
+

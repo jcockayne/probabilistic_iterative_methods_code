@@ -1,0 +1,66 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\begin{document}
+
+\section{Second Degree Iterative Methods}
+
+Second degree stationary iterative methods are derived from a corresponding first degree method
+\begin{equation*}
+  x_m = Gx_{m-1} + f.
+\end{equation*}
+An example of a general second degree method is \cite[Equation (2.9)]{Young72},
+\begin{equation}
+  \label{Eq:SecondDeg}
+  x_m = \underbrace{\omega\sigma\left(\frac{2}{\beta-\alpha}G - \frac{\beta+\alpha}{\beta-\alpha} I \right)}_J x_{m-1} + \underbrace{(1-\omega) I}_H x_{m-2} + \underbrace{\frac{2\omega\sigma}{\beta-\alpha} f}_k,
+\end{equation}
+where $\beta$ and $\alpha$ are the largest and smallest eigenvalues of $G$ respectively,
+\begin{equation*}
+\sigma = \frac{\beta - \alpha}{2 - (\beta - \alpha)}, \quad \text{and} \quad \omega = \frac{2}{1+\sqrt{1-\sigma^2}}.
+\end{equation*}
+
+Another second degree iterative method derived from Richardson's method is \cite[Section 2]{GV61},
+\begin{equation}
+  \label{Eq:Richardson2}
+  x_m = \underbrace{\left[2 I + G\right]}_{J}x_{m-1} + \underbrace{\left(-\frac{2}{1+\sqrt{1-\beta^2}}+1\right)I}_{H}x_{m-2} + \underbrace{\frac{2}{1+\sqrt{1-\beta^2}} f}_k,
+\end{equation}
+where $\beta$ is the largest eigenvalue of $G$.
+
+The second degree methods (\ref{Eq:SecondDeg}) and (\ref{Eq:Richardson2}) are equivalent to a first degree method
+\begin{equation*}
+  \begin{pmatrix}
+    x_m \\
+    x_{m-1}
+  \end{pmatrix}
+  =
+  \begin{pmatrix}
+    J & H \\
+    I & 0 
+  \end{pmatrix}
+  \begin{pmatrix}
+    x_{m-1}\\
+    x_{m-2}
+  \end{pmatrix}
+  +
+  \begin{pmatrix}
+    k \\
+    0
+  \end{pmatrix}
+  .
+\end{equation*}
+
+\section{Relating to Multigrid Methods}
+
+This is information we may want to put in the paper.
+
+Multigrid methods are an application of stationary iterative methods \cite[Chapter 13]{Saad} \cite{BM87}. Multigrid methods solve the systems of linear equations resulting from PDE discretizations. Stationary iterative methods are used in multigrid methods because they have the \emph{smoothing property} \cite[Section 1.3]{BM87}. A linear solver is said to have the smoothing property when it quickly reduces the high frequency components of the error.
+
+I believe the smoothing problem is seen in the numerical experiment that breaks down the uncertainty by principal component. In higher iterations, a large portion of all uncertainty is caused by the first few principal components (I fixed the numerical experiments and they match the ones Chris did). The first few principal components correspond to the low frequency parts of the interpolation problem. The stationary iterative methods have eliminated the high frequency errors in the interpolation problem, and we know this because there is not much uncertainty in the high frequency components.
+
+
+\bibliographystyle{plain}
+\bibliography{sources}
+
+\end{document}
