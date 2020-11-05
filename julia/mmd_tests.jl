@@ -2,6 +2,7 @@ using LinearAlgebra
 
 include("MMD.jl")
 include("IterativeMethods.jl")
+include("BayesCG.jl")
 
 N = 50
 samples = 1000
@@ -22,4 +23,19 @@ end
 
 gauss_ker(x,y) = exp(-norm(x-y)^2/2)
 
-print(MMD.mmd(xInput,xOutput,gauss_ker))
+print("Richardson \n")
+print(MMD.mmd(xInput,xOutput,gauss_ker),"\n")
+
+xOutputCG = zeros(N,samples)
+it = convert(Int64,floor(N*.9))
+InvA = inv(A)
+for i = 1:samples
+    xTrue = randn(N)
+    b = A*xTrue
+    xOutputCG[:,i],_ = BayesCG.bayescg(A,b,guesses[:,i],InvA,it,1)
+end
+
+print("BayesCG \n")
+print(MMD.mmd(xInput,xOutputCG,gauss_ker),"\n")
+
+
