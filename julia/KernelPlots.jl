@@ -34,20 +34,29 @@ function kernel_plots(solvers::Array{Function}, iters::Array{Int64},
             samples = mv_normal(mean,cov_sqrt,N_samples)
 
             current_plot = plot(Y, K_YZ*samples, color=:black, α=0.025,
-                                legend = false)
+                                legend = false, ylims = (-1.5,1.5))
             plot!(Y, K_YZ*direct, color=:blue, legend = false)
 
             if n == 1
-                yaxis!(solver_labels[m])
+                plot!(ylabel = solver_labels[m], yticks = [-1.0,0.0,1.0],
+                      grid = false)
+            else
+                plot!(yticks = false, grid = false)
             end
             if m == 1
-                title!("m = "*string(iters[n]))
+                plot!(title = "m = "*string(iters[n]),titlefontsize = 10)
+            end
+            if m != M
+                plot!(xticks = false, grid = false)
+            else
+                plot!(xticks = [0.0,0.5,1.0], grid = false)
             end
             
             push!(plot_list, current_plot)
         end
     end
-    plot(plot_list..., layout=(M,N), link=:y)
+    output_size = (200*N,200*M)
+    output_plot = plot(plot_list..., layout=(M,N), link=:y, size=output_size)  
 end
 
 function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
@@ -64,21 +73,37 @@ function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
         
         for m = 1:N_pc
             samples = mv_normal(K_YZ*mean,F.U[:,m],N_samples)
-            current_plot = plot(Y, samples, color=:black, α=0.025,
+            current_plot = plot(Y, samples, color=:black, α=0.1,
                                 legend = false)
             plot!(Y, K_YZ*direct, color=:blue, legend = false)
 
             if n == 1
-                yaxis!("PC "*string(m))
+                plot!(ylabel = "PC "*string(m), yticks = [-1.0,0.0,1.0],
+                      grid = false)
+            else
+                plot!(yticks = false, grid = false)
             end
             if m == 1
-                title!("m = "*string(iters[n]))
+                plot!(title = "m = "*string(iters[n])
+                      *", "*string(round(F.S[m]/sum(F.S)*100,
+                                         digits = 2))*" %",
+                      titlefontsize = 10)
+            else
+                plot!(title = string(round(F.S[m]/sum(F.S)*100,
+                                           digits = 2))*" %",
+                      titlefontsize = 10)
+            end
+            if m != N_pc
+                plot!(xticks = false, grid = false)
+            else
+                plot!(xticks = [0.0,0.5,1.0], grid = false)
             end
             
             plot_list[n,m] = current_plot
         end
     end
-    plot(plot_list[:]..., layout=(N_pc,N), link=:y)
+    output_plot = plot(plot_list[:]..., layout=(N_pc,N), link=:y,
+                       size=(200*N,200*N_pc))
 end
     
 end

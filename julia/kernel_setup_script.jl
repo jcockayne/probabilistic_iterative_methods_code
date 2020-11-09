@@ -34,7 +34,11 @@ if eigmin(k_Z) < 0.
     throw(Exception("The matrix k_Z was not positive-definite."))
 end
 
-g(Y, Z, X) = k(Y, Z, lambda) * X
-
 X_direct_solution = k_Z \ f_Z
-g_direct_solution = g(Y, Z, X_direct_solution)
+
+print("kernel_setup_script.jl has set up the interpolation problem. \n",
+      " Interpolation matrix is k_Z and the corresponding x axis is Z",
+      " The right hand side is f_z. \n The interpolation matrix for plotting",
+      " is k_YZ and the corresponding x axis is Y. \n The direct solution",
+      " to k_Z \\ f_z is X_direct_solution.")
+nothing

@@ -4,9 +4,9 @@ include("MMD.jl")
 include("IterativeMethods.jl")
 include("BayesCG.jl")
 
-N = 50
+N = 440
 samples = 1000
-iterations = 100
+iterations = 3
 
 A = randn(N,N); A = A'*A
 
@@ -21,10 +21,32 @@ for i = 1:samples
     xOutput[:,i] = IterativeMethods.apply(richardson,guesses[:,i],iterations)
 end
 
-gauss_ker(x,y) = exp(-norm(x-y)^2/2)
+function gauss_ker(x::Array{Float64,2},y::Array{Float64,2})
+    d = MMD.cdist(x,y)
+    return exp.(-0.5.*(d.^2))
+end
+
+function gauss_ker(x::Array{Float64,1},y::Array{Float64,1})
+    return exp.(-0.5.*(norm(x-y).^2))
+end
+
+print(@time gk2 = MMD.mmd_kernel_factory(xInput,xOutput))
+
+print("Time Test \n")
 
 print("Richardson \n")
-print(MMD.mmd(xInput,xOutput,gauss_ker),"\n")
+print((@time MMD.mmd(xInput,xOutput,gauss_ker)),"\n")
+print((@time MMD.mmd_fast(xInput,xOutput,gauss_ker)),"\n")
+print((@time MMD.mmd(xInput,xOutput,gk2)),"\n")
+print((@time MMD.mmd_fast(xInput,xOutput,gk2)),"\n")
+
+print("Time Test Again \n")
+
+print("Richardson \n")
+print((@time MMD.mmd(xInput,xOutput,gauss_ker)),"\n")
+print((@time MMD.mmd_fast(xInput,xOutput,gauss_ker)),"\n")
+print((@time MMD.mmd(xInput,xOutput,gk2)),"\n")
+print((@time MMD.mmd_fast(xInput,xOutput,gk2)),"\n")
 
 xOutputCG = zeros(N,samples)
 it = convert(Int64,floor(N*.9))
