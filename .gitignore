@@ -88,3 +88,6 @@ linear_solvers/**/*.cpp
 # Emacs Autosaves
 *~
 
+# Compressed archives
+*.tar.gz
+*.zip

@@ -178,7 +178,7 @@ function Richardson2(A::AbstractMatrix{<:Real}, b::AbstractVector{<:Real},
     BlockF = [f; zeros(N)]
     
     for i=1:iter
-        x = BlockG*x+f
+        x = BlockG*x+BlockF
     end
     x
 end
@@ -187,7 +187,7 @@ function Richardson2(A::AbstractMatrix{<:Real}, b::AbstractVector{<:Real},
                      x::AbstractVector{<:Real}, Sigma::AbstractMatrix{<:Real},
                      iter::Int64)
     N = length(b)
-
+    
     # Stepsize for First Degree Richardson 
     stepsize_out = Optimal
     stepsize = 2/(eigmin(A)+eigmax(A))
@@ -225,9 +225,9 @@ function Richardson2(A::AbstractMatrix{<:Real}, b::AbstractVector{<:Real},
     # Block matrices to make Second Degree Richardson a first degree method
     BlockG = [[J H]; [I zeros(N,N)]]
     BlockF = [f; zeros(N)]
-    
+
     for i=1:iter
-        x = BlockG*x + f
+        x = BlockG*x + BlockF
         Sigma = BlockG*Sigma*BlockG'
     end
     x, Sigma
