@@ -1,4 +1,9 @@
 using LinearAlgebra
+using Statistics
+
+using Distributed
+rmprocs(procs()[2:end])
+addprocs(7)
 
 include("MMD.jl")
 include("IterativeMethods.jl")
@@ -21,11 +26,6 @@ for i = 1:samples
     xOutput[:,i] = IterativeMethods.apply(richardson,guesses[:,i],iterations)
 end
 
-function gauss_ker(x::Array{Float64,2},y::Array{Float64,2})
-    d = MMD.cdist(x,y)
-    return exp.(-0.5.*(d.^2))
-end
-
 function gauss_ker(x::Array{Float64,1},y::Array{Float64,1})
     return exp.(-0.5.*(norm(x-y).^2))
 end
@@ -36,17 +36,14 @@ print("Time Test \n")
 
 print("Richardson \n")
 print((@time MMD.mmd(xInput,xOutput,gauss_ker)),"\n")
-print((@time MMD.mmd_fast(xInput,xOutput,gauss_ker)),"\n")
 print((@time MMD.mmd(xInput,xOutput,gk2)),"\n")
-print((@time MMD.mmd_fast(xInput,xOutput,gk2)),"\n")
-
-print("Time Test Again \n")
 
 print("Richardson \n")
-print((@time MMD.mmd(xInput,xOutput,gauss_ker)),"\n")
-print((@time MMD.mmd_fast(xInput,xOutput,gauss_ker)),"\n")
-print((@time MMD.mmd(xInput,xOutput,gk2)),"\n")
-print((@time MMD.mmd_fast(xInput,xOutput,gk2)),"\n")
+print((@time MMD.mmd_p(xInput,xOutput,gk2)),"\n")
+
+
+print("Bootstrap Richardson \n")
+b_mmd = @time MMD.bootstrap_mmd(xInput[:,1:100],xOutput[:,1:100],gk2,1000);
 
 xOutputCG = zeros(N,samples)
 it = convert(Int64,floor(N*.9))
