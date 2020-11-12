@@ -1,95 +1,11 @@
-module MMD
+@everywhere module MMD
 
 using LinearAlgebra
 using Statistics
+using StatsBase
+using Distributed
 
-export mmd_slow, mmd, mmd_kernel_factory
-
-function cdist(A::Matrix{Float64}, B::Matrix{Float64})
-    M = size(A)[2]
-    N = size(B)[2]
-
-    dist = zeros(Float64,M,N)
-
-    if A == B
-        # A = B, or close enough
-        for m = 1:(M-1)
-            for n = (m+1):N
-                dist[m,n] = norm(A[:,m]-B[:,n])
-            end
-        end
-        dist = dist + dist'
-    else
-        # A not equal B
-        for m = 1:M
-            for n = 1:N
-                dist[m,n] = norm(A[:,m]-B[:,n])
-            end
-        end
-    end
-
-    return dist
-end
-
-function mmd_slow(input_samples::Matrix{Float64},
-                  output_samples::Matrix{Float64}, kernel::Function)
-    N = size(input_samples)[2]
-
-    mmd_est = 0
-    
-    for i = 1:N
-        for j = 1:N
-            if i != j
-                mmd_est += (kernel(input_samples[:,i],input_samples[:,j])
-                            + kernel(output_samples[:,i],output_samples[:,j])
-                            - kernel(input_samples[:,i],output_samples[:,j])
-                            - kernel(output_samples[:,i],input_samples[:,j])
-                            )
-            end
-        end
-    end
-    mmd_est = mmd_est/(N*(N-1))
-    return mmd_est
-end
-
-function mmd(input_samples::Matrix{Float64}, output_samples::Matrix{Float64},
-             kernel::Function)
-    N = size(input_samples)[2]
-
-    mmd_est = 0
-    
-    for i = 1:(N-1)
-        for j = (i+1):N
-            mmd_est += (2*kernel(input_samples[:,i],input_samples[:,j])
-                        + 2*kernel(output_samples[:,i],output_samples[:,j])
-                        - 2*kernel(input_samples[:,i],output_samples[:,j])
-                        - 2*kernel(output_samples[:,i],input_samples[:,j])
-                        )
-        end
-    end
-    mmd_est = mmd_est/(N*(N-1))
-    return mmd_est
-end
-
-function mmd_fast(input_samples::Matrix{Float64},
-                  output_samples::Matrix{Float64}, kernel::Function)
-
-    N = size(input_samples)[2]
-
-    d1 = kernel(input_samples,input_samples)
-    d2 = kernel(output_samples,output_samples)
-    d3 = kernel(input_samples,output_samples)
-
-    d1 = d1 - Diagonal(d1)
-    d2 = d2 - Diagonal(d2)
-    d3 = d3 - Diagonal(d3)
-
-    mmd_est = sum(d1 + d2 - d3 - d3')
-    mmd_est = mmd_est/(N*(N-1))
-    
-    return mmd_est
-end
-
+export mmd_kernel_factory, mmd, bootstrap_mmd
 
 function mmd_kernel_factory(input_samples::Matrix{Float64},
                             output_samples::Matrix{Float64})
@@ -118,15 +34,75 @@ function mmd_kernel_factory(input_samples::Matrix{Float64},
     end
     dist_mean = mean(dist)
 
-    function gauss_ker(x::Array{Float64,2},y::Array{Float64,2})
-        d = cdist(x,y)
-        return exp.(-0.5.*(d.^2)./dist_mean^2)
-    end
-
     function gauss_ker(x::Array{Float64,1},y::Array{Float64,1})
         return exp.(-0.5.*(norm(x-y).^2)./dist_mean^2)
     end
 
     return gauss_ker
 end
+
+function mmd(input_samples::Matrix{Float64}, output_samples::Matrix{Float64},
+             kernel::Function)
+    N = size(input_samples)[2]
+
+    mmd_est = 0
+    
+    for i = 1:(N-1)
+        for j = (i+1):N
+            mmd_est += (2*kernel(input_samples[:,i],input_samples[:,j])
+                        + 2*kernel(output_samples[:,i],output_samples[:,j])
+                        - 2*kernel(input_samples[:,i],output_samples[:,j])
+                        - 2*kernel(output_samples[:,i],input_samples[:,j])
+                        )
+        end
+    end
+    mmd_est = mmd_est/(N*(N-1))
+    return mmd_est
+end
+
+function mmd_p(input_samples::Matrix{Float64}, output_samples::Matrix{Float64},
+               kernel::Function)
+    N = size(input_samples)[2]
+
+    mmd_est = 0
+    
+    mmd_est = @distributed (+) for i = 1:(N-1)
+        mmd_inner = 0
+        for j = (i+1):N
+            mmd_inner += (2*kernel(input_samples[:,i],input_samples[:,j])
+                          + 2*kernel(output_samples[:,i],output_samples[:,j])
+                          - 2*kernel(input_samples[:,i],output_samples[:,j])
+                          - 2*kernel(output_samples[:,i],input_samples[:,j])
+                          )
+        end
+        mmd_inner
+    end
+    mmd_est = mmd_est/(N*(N-1))
+    return mmd_est
+end
+
+function bootstrap_mmd(input_samples::Matrix{Float64},
+                       output_samples::Matrix{Float64}, kernel::Function,
+                       N_mmd::Int64)
+
+    M = size(input_samples)[2]
+    combined_sample = [input_samples output_samples]
+
+    mmd_list = Array{Tuple{Array{Float64,2},Array{Float64,2}},1}(undef,N_mmd)
+
+    mmd_map = function (sample_tuple::Tuple{Array{Float64,2},Array{Float64,2}})
+        mmd(sample_tuple[1], sample_tuple[2],kernel)
+    end
+
+    for i = 1:N_mmd
+        s1_index = sample(1:2*M,M)
+        s2_index = sample(1:2*M,M)
+
+        mmd_list[i] = (combined_sample[:,s1_index],
+                       combined_sample[:,s2_index])
+    end
+
+    return pmap(mmd_map,mmd_list)
+end
+
 end

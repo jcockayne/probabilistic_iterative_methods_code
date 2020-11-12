@@ -6,13 +6,13 @@ using LaTeXStrings
 using Plots
 using LinearAlgebra
 
-function mv_normal(mean,cov_sqrt,N_samples)
+function mv_normal(mean,cov,N_samples)
     M = length(mean)
-    N = convert(Int64,round(length(cov_sqrt[:])/M))
-    cov_sqrt = reshape(cov_sqrt,M,N)
+    N = convert(Int64,round(length(cov[:])/M))
+    cov = reshape(cov,M,N)
     samples = zeros(M,N_samples)
     for i = 1:N_samples
-        samples[:,i] = mean + cov_sqrt*randn(N)
+        samples[:,i] = mean + cov*randn(N)
     end
     return samples
 end
