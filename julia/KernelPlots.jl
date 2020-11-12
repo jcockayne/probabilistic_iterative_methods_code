@@ -1,6 +1,7 @@
 module KernelPlots
 
 export kernel_plots, pc_plots
+using LaTeXStrings
 
 using Plots
 using LinearAlgebra
@@ -17,7 +18,7 @@ function mv_normal(mean,cov_sqrt,N_samples)
 end
 
 function kernel_plots(solvers::Array{Function}, iters::Array{Int64},
-                      solver_labels::Array{String},
+                      solver_labels::Array{<:AbstractString},
                       Y::AbstractVector, K_YZ::AbstractMatrix,
                       direct::AbstractVector, N_samples::Int64)
 
@@ -44,19 +45,19 @@ function kernel_plots(solvers::Array{Function}, iters::Array{Int64},
                 plot!(yticks = false, grid = false)
             end
             if m == 1
-                plot!(title = "m = "*string(iters[n]),titlefontsize = 10)
+                plot!(title = "\$m = $(iters[n])\$", titlefontsize = 10)
             end
             if m != M
                 plot!(xticks = false, grid = false)
             else
                 plot!(xticks = [0.0,0.5,1.0], grid = false)
             end
-            
+
             push!(plot_list, current_plot)
         end
     end
     output_size = (200*N,200*M)
-    output_plot = plot(plot_list..., layout=(M,N), link=:y, size=output_size)  
+    output_plot = plot(plot_list..., layout=(M,N), link=:y, size=output_size)
 end
 
 function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
@@ -70,7 +71,7 @@ function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
         mean,cov = solver(iters[n])
         interpolation_cov = K_YZ*cov*K_YZ'
         F = svd(interpolation_cov)
-        
+
         for m = 1:N_pc
             samples = mv_normal(K_YZ*mean,F.U[:,m],N_samples)
             current_plot = plot(Y, samples, color=:black, α=0.1,
@@ -86,11 +87,11 @@ function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
             if m == 1
                 plot!(title = "m = "*string(iters[n])
                       *", "*string(round(F.S[m]/sum(F.S)*100,
-                                         digits = 2))*" %",
+                                         digits = 2))*"\\%",
                       titlefontsize = 10)
             else
                 plot!(title = string(round(F.S[m]/sum(F.S)*100,
-                                           digits = 2))*" %",
+                                           digits = 2))*"\\%",
                       titlefontsize = 10)
             end
             if m != N_pc
@@ -98,12 +99,12 @@ function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
             else
                 plot!(xticks = [0.0,0.5,1.0], grid = false)
             end
-            
+
             plot_list[n,m] = current_plot
         end
     end
     output_plot = plot(plot_list[:]..., layout=(N_pc,N), link=:y,
                        size=(200*N,200*N_pc))
 end
-    
+
 end
