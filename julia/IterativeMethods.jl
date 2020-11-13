@@ -215,12 +215,12 @@ function Richardson2(A::AbstractMatrix{<:Real}, b::AbstractVector{<:Real},
     alpha = eigmin(G)
     beta = eigmax(G)
     sigma = (beta - alpha)/(2 - (beta + alpha))
-    omega = 2/(1 + sqrt(1 - sigma^2))
+    gamma = 2/(1 + sqrt(1 - sigma^2))
 
     # Matrices for Second Degree Richardson
-    J = omega*sigma*(2/(beta-alpha)*G-(beta+alpha)/(beta-alpha)*I)
-    H = (1 - omega)*I
-    f = 2*omega*sigma/(beta-alpha)*f
+    J = gamma*sigma*(2/(beta-alpha)*G-(beta+alpha)/(beta-alpha)*I)
+    H = (1 - gamma)*I
+    f = 2*gamma*sigma/(beta-alpha)*f
     
     # Block matrices to make Second Degree Richardson a first degree method
     BlockG = [[J H]; [I zeros(N,N)]]
