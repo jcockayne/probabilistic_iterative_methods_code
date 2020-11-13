@@ -9,8 +9,8 @@ include("MMD.jl")
 include("IterativeMethods.jl")
 include("BayesCG.jl")
 
-N = 440
-samples = 1000
+N = 100
+samples = 200
 iterations = 3
 
 A = randn(N,N); A = A'*A
@@ -22,8 +22,8 @@ xOutput = zeros(N,samples)
 for i = 1:samples
     xTrue = randn(N)
     b = A*xTrue
-    richardson = IterativeMethods.Richardson(A,b,IterativeMethods.Optimal)
-    xOutput[:,i] = IterativeMethods.apply(richardson,guesses[:,i],iterations)
+    xOutput[:,i] = IterativeMethods.Richardson(A,b,guesses[:,i],iterations,
+                                               IterativeMethods.Optimal)
 end
 
 function gauss_ker(x::Array{Float64,1},y::Array{Float64,1})
@@ -36,14 +36,17 @@ print("Time Test \n")
 
 print("Richardson \n")
 print((@time MMD.mmd(xInput,xOutput,gauss_ker)),"\n")
-print((@time MMD.mmd(xInput,xOutput,gk2)),"\n")
+print((@time mmdr=MMD.mmd(xInput,xOutput,gk2)),"\n")
 
 print("Richardson \n")
 print((@time MMD.mmd_p(xInput,xOutput,gk2)),"\n")
 
 
 print("Bootstrap Richardson \n")
-b_mmd = @time MMD.bootstrap_mmd(xInput[:,1:100],xOutput[:,1:100],gk2,1000);
+b_mmd = @time MMD.bootstrap_mmd(xInput[:,1:100],xOutput[:,1:100],gk2,100);
+print(mean(b_mmd),"\n")
+print(maximum(b_mmd),"\n")
+print(length(b_mmd[b_mmd.<mmdr]))
 
 xOutputCG = zeros(N,samples)
 it = convert(Int64,floor(N*.9))

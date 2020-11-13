@@ -95,8 +95,10 @@ function bootstrap_mmd(input_samples::Matrix{Float64},
     end
 
     for i = 1:N_mmd
-        s1_index = sample(1:2*M,M)
-        s2_index = sample(1:2*M,M)
+        s1_index = sample(1:2*M,M,replace=false)
+        #s2_index = sample(1:2*M,M)
+        not_in_s1(y) = !(y in s1_index)
+        s2_index = filter(not_in_s1,1:2*M)
 
         mmd_list[i] = (combined_sample[:,s1_index],
                        combined_sample[:,s2_index])
