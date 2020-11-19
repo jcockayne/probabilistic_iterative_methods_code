@@ -11,8 +11,10 @@ f(z) = z < 0.5 ? sin(2*pi*z) : sin(4*pi*z)
 
 f_Y = f.(Y)
 
-k(x::Number, y::Number, lambda::Number) :: Float64 = (1 + (norm(x - y)
-                                                           /lambda)^2)^(-1)
+#k(x::Number, y::Number, lambda::Number) :: Float64 = (1 + (norm(x - y)
+#                                                           /lambda)^2)^(-1)
+
+k(x::Number, y::Number, lambda::Number) :: Float64 = exp(-0.5*(norm(x-y) / lambda)^2)
 
 function k(x::AbstractVector{<:Number}, y::AbstractVector{<:Number},
            lambda::Number) :: Matrix{Float64}

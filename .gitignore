@@ -91,3 +91,7 @@ linear_solvers/**/*.cpp
 # Compressed archives
 *.tar.gz
 *.zip
+
+# DS_Store
+*.DS_Store
+DS_Store
