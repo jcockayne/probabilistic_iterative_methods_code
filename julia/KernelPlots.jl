@@ -34,23 +34,23 @@ function kernel_plots(solvers::Array{Function}, iters::Array{Int64},
             cov_sqrt = F.V*((F.S.^(1/2)).*F.V')
             samples = mv_normal(mean,cov_sqrt,N_samples)
 
-            current_plot = plot(Y, K_YZ*samples, color=:black, α=0.025,
+            current_plot = plot(Y, K_YZ*samples, color=:black, α=0.01,
                                 legend = false, ylims = (-1.5,1.5))
             plot!(Y, K_YZ*direct, color=:blue, legend = false)
 
             if n == 1
                 plot!(ylabel = solver_labels[m], yticks = [-1.0,0.0,1.0],
-                      grid = false)
+                      grid = false, guidefontsize=16, tickfontsize=14)
             else
                 plot!(yticks = false, grid = false)
             end
             if m == 1
-                plot!(title = "\$m = $(iters[n])\$", titlefontsize = 10)
+                plot!(title = "\$m = $(iters[n])\$", titlefontsize = 16)
             end
             if m != M
                 plot!(xticks = false, grid = false)
             else
-                plot!(xticks = [0.0,0.5,1.0], grid = false)
+                plot!(xticks = [0.0,0.5,1.0], grid = false, tickfontsize=14)
             end
 
             push!(plot_list, current_plot)
@@ -80,7 +80,7 @@ function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
 
             if n == 1
                 plot!(ylabel = "PC "*string(m), yticks = [-1.0,0.0,1.0],
-                      grid = false)
+                      grid = false, guidefontsize=16, tickfontsize=14)
             else
                 plot!(yticks = false, grid = false)
             end
@@ -88,16 +88,16 @@ function pc_plots(solver::Function, iters::Array{Int64}, N_pc::Int64,
                 plot!(title = "m = "*string(iters[n])
                       *", "*string(round(F.S[m]/sum(F.S)*100,
                                          digits = 2))*"\\%",
-                      titlefontsize = 10)
+                      titlefontsize = 16)
             else
                 plot!(title = string(round(F.S[m]/sum(F.S)*100,
                                            digits = 2))*"\\%",
-                      titlefontsize = 10)
+                      titlefontsize = 16)
             end
             if m != N_pc
                 plot!(xticks = false, grid = false)
             else
-                plot!(xticks = [0.0,0.5,1.0], grid = false)
+                plot!(xticks = [0.0,0.5,1.0], grid = false, tickfontsize=14)
             end
 
             plot_list[n,m] = current_plot

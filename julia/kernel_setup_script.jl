@@ -1,10 +1,12 @@
 using LinearAlgebra
 
-Z = vcat(range(0, stop=0.1, length=20), range(0.2, stop=0.8, length=400),
-         range(0.9, stop=1, length=20))
+Z = vcat(range(0, stop=0.1, length=60), range(0.2, stop=0.8, length=400),
+         range(0.9, stop=1, length=60))
 d = length(Z)
 
-M = 200
+if ~@isdefined M
+    M = 200
+end
 Y = range(0, stop=1, length=M)
 
 f(z) = z < 0.5 ? sin(2*pi*z) : sin(4*pi*z)
